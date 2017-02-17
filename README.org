@@ -1,0 +1,64 @@
+* golang语言实现的支付库
+最近在搞支付这块，但是网上的代码基本没有能用的，要么不全，要么有硬伤，所以最后还是自己接了。抽出写的一部分代码，封装下分享出来，希望能给大家一点借鉴意义。
+* 支持的支付方式
+目前支持微信app，支付宝网页版，支付宝app。要是谁有新的支付方式也可以合并。
+* 使用方法
+#+BEGIN_SRC go
+package main
+
+import (
+	"fmt"
+	"github.com/guidao/gopay"
+	"github.com/guidao/gopay/client"
+	"github.com/guidao/gopay/common"
+	"github.com/guidao/gopay/constant"
+	"net/http"
+)
+
+//支付宝举例
+func main() {
+	//设置支付宝账号信息
+	initClient()
+	//设置回调函数
+	initHandle()
+
+	//支付
+	charge := new(common.Charge)
+	charge.PayMethod = constant.WECHAT                              //支付方式
+	charge.MoneyFee = 1                                             // 支付钱单位分
+	charge.Describe = "test pay"                                    //支付描述
+	charge.TradeNum = "1111111111"                                  //交易号
+	charge.CallbackURL = "http://127.0.0.1/callback/aliappcallback" //回调地址必须跟下面一样
+
+	fdata, err := gopay.Pay(charge)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(fdata)
+}
+
+func initClient() {
+	client.InitAliAppClient(&client.AliAppClient{
+		PartnerID:  "xxx",
+		SellerID:   "xxxx",
+		AppID:      "xxx",
+		PrivateKey: nil,
+		PublicKey:  nil,
+	})
+}
+
+func initHandle() {
+	http.HandleFunc("callback/aliappcallback", func(w http.ResponseWriter, r *http.Request) {
+		//返回支付结果
+		aliResult, err := gopay.AliAppCallback(w, r)
+		if err != nil {
+			fmt.Println(err)
+			//log.xxx
+			return
+		}
+		//接下来处理自己的逻辑
+		fmt.Println(aliResult)
+	})
+}
+#+END_SRC
