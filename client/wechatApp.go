@@ -5,7 +5,7 @@ import (
 	"crypto/md5"
 	// "encoding/json"
 	"encoding/xml"
-	"errors"
+	//"errors"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
 	"github.com/milkbobo/gopay/util"
@@ -15,6 +15,10 @@ import (
 )
 
 var defaultWechatAppClient *WechatAppClient
+
+func InitWxAppClient(c *WechatAppClient) {
+	defaultWechatAppClient = c
+}
 
 // DefaultWechatAppClient 默认微信app客户端
 func DefaultWechatAppClient() *WechatAppClient {
@@ -30,26 +34,23 @@ type WechatAppClient struct {
 	PayURL      string // 支付地址
 }
 
-func InitWechatClient(c *WechatAppClient) {
-	defaultWechatAppClient = c
-}
-
 // Pay 支付
-func (wechat *WechatAppClient) Pay(charge *common.Charge) (map[string]string, error) {
+func (this *WechatAppClient) Pay(charge *common.Charge) (map[string]string, error) {
 	var m = make(map[string]string)
-	m["appid"] = wechat.AppID
-	m["mch_id"] = wechat.MchID
+	m["appid"] = this.AppID
+	m["mch_id"] = this.MchID
 	m["nonce_str"] = util.RandomStr()
 	m["body"] = charge.Describe
 	m["out_trade_no"] = charge.TradeNum
-	m["total_fee"] = fmt.Sprintf("%.2f", charge.MoneyFee)
+	m["total_fee"] = fmt.Sprintf("%d", int(charge.MoneyFee*100))
 	m["spbill_create_ip"] = util.LocalIP()
-	m["notify_url"] = wechat.CallbackURL
+	m["notify_url"] = charge.CallbackURL
 	m["trade_type"] = "APP"
+	m["sign_type"] = "MD5"
 
-	sign, err := wechat.GenSign(m)
+	sign, err := this.GenSign(m)
 	if err != nil {
-		return map[string]string{}, err
+		panic(err)
 	}
 	m["sign"] = sign
 	// 转出xml结构
@@ -59,38 +60,38 @@ func (wechat *WechatAppClient) Pay(charge *common.Charge) (map[string]string, er
 	}
 	xmlStr := fmt.Sprintf("<xml>%s</xml>", buf.String())
 
-	re, err := HTTPSC.PostData(wechat.PayURL, "text/xml:charset=UTF-8", xmlStr)
+	re, err := HTTPSC.PostData(this.PayURL, "text/xml:charset=UTF-8", xmlStr)
 	if err != nil {
-		return map[string]string{}, err
+		panic(err)
 	}
 
 	var xmlRe common.WeChatReResult
 	err = xml.Unmarshal(re, &xmlRe)
 	if err != nil {
-		return map[string]string{}, err
+		panic(err)
 	}
 
 	if xmlRe.ReturnCode != "SUCCESS" {
 		// 通信失败
-		return map[string]string{}, errors.New(xmlRe.ReturnMsg)
+		panic(xmlRe.ReturnMsg)
 	}
 
 	if xmlRe.ResultCode != "SUCCESS" {
 		// 支付失败
-		return map[string]string{}, errors.New(xmlRe.ErrCodeDes)
+		panic(xmlRe.ErrCodeDes)
 	}
 
 	var c = make(map[string]string)
-	c["appid"] = wechat.AppID
-	c["partnerid"] = wechat.MchID
+	c["appid"] = this.AppID
+	c["partnerid"] = this.MchID
 	c["prepayid"] = xmlRe.PrepayID
 	c["package"] = "Sign=WXPay"
 	c["noncestr"] = util.RandomStr()
 	c["timestamp"] = fmt.Sprintf("%d", time.Now().Unix())
 
-	sign2, err := wechat.GenSign(c)
+	sign2, err := this.GenSign(c)
 	if err != nil {
-		return map[string]string{}, err
+		panic(err)
 	}
 	//c["signType"] = "MD5"
 	c["paySign"] = strings.ToUpper(sign2)
@@ -99,7 +100,7 @@ func (wechat *WechatAppClient) Pay(charge *common.Charge) (map[string]string, er
 }
 
 // GenSign 产生签名
-func (wechat *WechatAppClient) GenSign(m map[string]string) (string, error) {
+func (this *WechatAppClient) GenSign(m map[string]string) (string, error) {
 	delete(m, "sign")
 	delete(m, "key")
 	var signData []string
@@ -111,7 +112,7 @@ func (wechat *WechatAppClient) GenSign(m map[string]string) (string, error) {
 
 	sort.Strings(signData)
 	signStr := strings.Join(signData, "&")
-	signStr = signStr + "&key=" + wechat.Key
+	signStr = signStr + "&key=" + this.Key
 	c := md5.New()
 	_, err := c.Write([]byte(signStr))
 	if err != nil {
@@ -121,20 +122,5 @@ func (wechat *WechatAppClient) GenSign(m map[string]string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%x", signByte), nil
-}
-
-// CheckSign 检查签名
-func (wechat *WechatAppClient) CheckSign(data string, sign string) error {
-	signData := data + "&key=" + wechat.Key
-	c := md5.New()
-	_, err := c.Write([]byte(signData))
-	if err != nil {
-		return err
-	}
-	signOut := fmt.Sprintf("%x", c.Sum(nil))
-	if strings.ToUpper(sign) == strings.ToUpper(signOut) {
-		return nil
-	}
-	return errors.New("签名交易错误")
+	return strings.ToUpper(fmt.Sprintf("%x", signByte)), nil
 }

@@ -5,19 +5,24 @@ type AliWebPayResult struct {
 	NotifyTime       string `json:"notify_time"`
 	NotifyType       string `json:"notify_type"`
 	NotifyID         string `json:"notify_id"`
+	AppId            string `json:"app_id"`
+	Charset          string `json:"charset"`
+	Version          string `json:"version"`
 	SignType         string `json:"sign_type"`
 	Sign             string `json:"sign"`
+	TradeNum         string `json:"trade_no"`
 	OutTradeNum      string `json:"out_trade_no"`
+	OutBizNo         string `json:"out_biz_no"`
+	BuyerID          string `json:"buyer_id"`
+	buyerPayAmount   string `json:"buyer_pay_amount"`
+	RefundFee        string `json:"refund_fee"`
 	Subject          string `json:"subject"`
 	PayMentType      string `json:"payment_type"`
-	TradeNum         string `json:"trade_no"`
-	TradeStatus      string `json:"trade_status"`
 	GmtPayMent       string `json:"gmt_payment"`
 	GmtClose         string `json:"gmt_close"`
 	SellerEmail      string `json:"seller_email"`
 	BuyerEmail       string `json:"buyer_email"`
 	SellerID         string `json:"seller_id"`
-	BuyerID          string `json:"buyer_id"`
 	Price            string `json:"price"`
 	TotalFee         string `json:"total_fee"`
 	Quantity         string `json:"quantity"`
@@ -27,6 +32,7 @@ type AliWebPayResult struct {
 	UseCoupon        string `json:"use_coupon"`
 	RefundStatus     string `json:"refund_status"`
 	GmtRefund        string `json:"gmt_refund"`
+	AliQueryResult
 }
 
 type AliQueryResult struct {
@@ -52,4 +58,5 @@ type AliQueryResult struct {
 	BuyerUserID         string `json:"buyer_user_id"`
 	DiscountGoodsDetail string `json:"discount_goods_detail"`
 	IndustrySepcDetail  string `json:"industry_sepc_detail"`
+	PassbackParams      string `json:"passback_params"`
 }

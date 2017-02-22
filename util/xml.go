@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func XmlToMap(xmlData []byte) (map[string]string, error) {
+func XmlToMap(xmlData []byte) map[string]string {
 	decoder := xml.NewDecoder(bytes.NewReader(xmlData))
 	m := make(map[string]string)
 	var token xml.Token
@@ -28,7 +28,7 @@ func XmlToMap(xmlData []byte) (map[string]string, error) {
 	}
 
 	if err != nil && err != io.EOF {
-		return nil, err
+		panic(err)
 	}
-	return m, nil
+	return m
 }

@@ -70,7 +70,7 @@ func NewHTTPSClient() *HTTPSClient {
 func (c *HTTPSClient) PostData(url string, contentType string, data string) ([]byte, error) {
 	resp, err := c.Post(url, contentType, strings.NewReader(data))
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
@@ -85,7 +85,7 @@ type HTTPClient struct {
 func (c *HTTPClient) PostData(url, format string, data string) ([]byte, error) {
 	resp, err := c.Post(url, format, strings.NewReader(data))
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)

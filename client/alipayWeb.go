@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -9,7 +8,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
-	"log"
 	"net/url"
 	"sort"
 	"strings"
@@ -38,32 +36,32 @@ func DefaultAliWebClient() *AliWebClient {
 }
 
 // Pay 实现支付接口
-func (ac *AliWebClient) Pay(charge *common.Charge) (string, error) {
+func (this *AliWebClient) Pay(charge *common.Charge) (map[string]string, error) {
 	var m = make(map[string]string)
 	m["service"] = "create_direct_pay_by_user"
-	m["partner"] = ac.PartnerID
+	m["partner"] = this.PartnerID
 	m["_input_charset"] = "UTF-8"
-	m["notify_url"] = ac.CallbackURL
-	m["return_url"] = charge.ReturnURL
+	m["notify_url"] = charge.CallbackURL
+	m["return_url"] = charge.ReturnURL // 注意链接不能有&符号，否则会签名错误
 	m["out_trade_no"] = charge.TradeNum
 	m["subject"] = charge.Describe
 	m["total_fee"] = fmt.Sprintf("%.2f", charge.MoneyFee)
-	m["seller_id"] = ac.SellerID
-	m["payment_type"] = "1"
-	m["show_url"] = charge.ShowURL
-	sign, err := ac.GenSign(m)
-	if err != nil {
-		return "", err
-	}
-	m["sign"] = sign //
-	fmt.Println("sign:", sign)
-	m["sign_type"] = "RSA"
+	m["seller_id"] = this.SellerID
+	//m["payment_type"] = "1"
+	//m["show_url"] = charge.ShowURL
 
-	return ac.ToHTML(m), nil
+	sign, err := this.GenSign(m)
+	if err != nil {
+		panic(err)
+	}
+	m["sign"] = sign
+	m["sign_type"] = "RSA"
+	fmt.Println("sign:", sign)
+	return map[string]string{"url":this.ToURL(m)}, nil
 }
 
 // GenSign 产生签名
-func (ac *AliWebClient) GenSign(m map[string]string) (string, error) {
+func (this *AliWebClient) GenSign(m map[string]string) (string, error) {
 	delete(m, "sign_type")
 	delete(m, "sign")
 	var data []string
@@ -79,60 +77,39 @@ func (ac *AliWebClient) GenSign(m map[string]string) (string, error) {
 	s := sha1.New()
 	_, err := s.Write([]byte(signData))
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 	hashByte := s.Sum(nil)
-	signByte, err := ac.PrivateKey.Sign(rand.Reader, hashByte, crypto.SHA1)
+	signByte, err := this.PrivateKey.Sign(rand.Reader, hashByte, crypto.SHA1)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 	return url.QueryEscape(base64.StdEncoding.EncodeToString(signByte)), nil
 }
 
-// ToHTML 转换form表单
-func (ac *AliWebClient) ToHTML(m map[string]string) string {
-	buf := bytes.NewBufferString("")
-	for k, v := range m {
-		buf.WriteString(fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, k, v))
-	}
-	formatStr :=
-		`<html>
-    <meta http-equiv=Content-Type content="text/html;charset=utf-8">
-    <body>
-        <form id="paysubmit" name="paysubmit" action="%s" method = "GET">
-        %s
-        <input type="submit" value="ok" style="display:none">
-        </form>
-        <script>
-         (function(){
-             document.forms["paysubmit"].submit();
-         })();
-        </script>
-    </body>
-</html>`
-	return fmt.Sprintf(formatStr, ac.PayURL, buf.String())
-}
-
 // ToURL
-func (ac *AliWebClient) ToURL(m map[string]string) string {
+func (this *AliWebClient) ToURL(m map[string]string) string {
 	var buf []string
 	for k, v := range m {
 		buf = append(buf, fmt.Sprintf("%s=%s", k, v))
 	}
-	return fmt.Sprintf("%s?%s", ac.PayURL, strings.Join(buf, "&"))
+	return fmt.Sprintf("%s?%s", this.PayURL, strings.Join(buf, "&"))
 }
 
 // CheckSign 检测签名
-func (ac *AliWebClient) CheckSign(signData, sign string) error {
+func (this *AliWebClient) CheckSign(signData, sign string) {
 	signByte, err := base64.StdEncoding.DecodeString(sign)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	s := sha1.New()
 	_, err = s.Write([]byte(signData))
 	if err != nil {
-		return err
+		panic(err)
 	}
 	hash := s.Sum(nil)
-	return rsa.VerifyPKCS1v15(ac.PublicKey, crypto.SHA1, hash, signByte)
+	err = rsa.VerifyPKCS1v15(this.PublicKey, crypto.SHA1, hash, signByte)
+	if err != nil {
+		panic(err)
+	}
 }

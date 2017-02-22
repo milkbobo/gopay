@@ -5,7 +5,7 @@ import (
 	"crypto/md5"
 	// "encoding/json"
 	"encoding/xml"
-	"errors"
+	//"errors"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
 	"github.com/milkbobo/gopay/util"
@@ -36,23 +36,21 @@ type WechatWebClient struct {
 }
 
 // Pay 支付
-func (wechat *WechatWebClient) Pay(charge *common.Charge) (map[string]string, error) {
+func (this *WechatWebClient) Pay(charge *common.Charge) (map[string]string, error) {
 	var m = make(map[string]string)
-	m["appid"] = wechat.AppID
-	m["mch_id"] = wechat.MchID
+	m["appid"] = this.AppID
+	m["mch_id"] = this.MchID
 	m["nonce_str"] = util.RandomStr()
 	m["body"] = charge.Describe
 	m["out_trade_no"] = charge.TradeNum
 	m["total_fee"] = fmt.Sprintf("%d", int(charge.MoneyFee*100))
 	m["spbill_create_ip"] = util.LocalIP()
-	m["notify_url"] = wechat.CallbackURL
+	m["notify_url"] = charge.CallbackURL
 	m["trade_type"] = "JSAPI"
 	m["openid"] = charge.OpenID
 	m["sign_type"] = "MD5"
-	fmt.Printf("%d", int(charge.MoneyFee*100))
-	fmt.Printf("%+v", m)
 
-	sign, err := wechat.GenSign(m)
+	sign, err := this.GenSign(m)
 	if err != nil {
 		panic(err)
 	}
@@ -64,7 +62,7 @@ func (wechat *WechatWebClient) Pay(charge *common.Charge) (map[string]string, er
 		buf.WriteString(fmt.Sprintf("<%s><![CDATA[%s]]></%s>", k, v, k))
 	}
 	xmlStr := fmt.Sprintf("<xml>%s</xml>", buf.String())
-	re, err := HTTPSC.PostData(wechat.PayURL, "text/xml:charset=UTF-8", xmlStr)
+	re, err := HTTPSC.PostData(this.PayURL, "text/xml:charset=UTF-8", xmlStr)
 	if err != nil {
 		panic(err)
 	}
@@ -84,13 +82,13 @@ func (wechat *WechatWebClient) Pay(charge *common.Charge) (map[string]string, er
 	}
 
 	var c = make(map[string]string)
-	c["appId"] = wechat.AppID
+	c["appId"] = this.AppID
 	c["timeStamp"] = fmt.Sprintf("%d", time.Now().Unix())
 	c["nonceStr"] = util.RandomStr()
 	c["package"] = fmt.Sprintf("prepay_id=%s", xmlRe.PrepayID)
 	c["signType"] = "MD5"
 
-	sign2, err := wechat.GenSign(c)
+	sign2, err := this.GenSign(c)
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +98,7 @@ func (wechat *WechatWebClient) Pay(charge *common.Charge) (map[string]string, er
 }
 
 // GenSign 产生签名
-func (wechat *WechatWebClient) GenSign(m map[string]string) (string, error) {
+func (this *WechatWebClient) GenSign(m map[string]string) (string, error) {
 	delete(m, "sign")
 	delete(m, "key")
 	var signData []string
@@ -112,43 +110,28 @@ func (wechat *WechatWebClient) GenSign(m map[string]string) (string, error) {
 
 	sort.Strings(signData)
 	signStr := strings.Join(signData, "&")
-	signStr = signStr + "&key=" + wechat.Key
+	signStr = signStr + "&key=" + this.Key
 	c := md5.New()
 	_, err := c.Write([]byte(signStr))
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 	signByte := c.Sum(nil)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 	return strings.ToUpper(fmt.Sprintf("%x", signByte)), nil
 }
 
-// CheckSign 检查签名
-func (wechat *WechatWebClient) CheckSign(data string, sign string) error {
-	signData := data + "&Key=" + wechat.Key
-	c := md5.New()
-	_, err := c.Write([]byte(signData))
-	if err != nil {
-		return err
-	}
-	signOut := fmt.Sprintf("%x", c.Sum(nil))
-	if strings.ToUpper(sign) == strings.ToUpper(signOut) {
-		return nil
-	}
-	return errors.New("签名交易错误")
-}
-
 // QueryOrder 查询订单
-func (wechat *WechatWebClient) QueryOrder(tradeNum string) (*common.WeChatQueryResult, error) {
+func (this *WechatWebClient) QueryOrder(tradeNum string) (*common.WeChatQueryResult, error) {
 	var m = make(map[string]string)
-	m["appid"] = wechat.AppID
-	m["mch_id"] = wechat.MchID
+	m["appid"] = this.AppID
+	m["mch_id"] = this.MchID
 	m["out_trade_no"] = tradeNum
 	m["nonce_str"] = util.RandomStr()
 
-	sign, err := wechat.GenSign(m)
+	sign, err := this.GenSign(m)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +143,7 @@ func (wechat *WechatWebClient) QueryOrder(tradeNum string) (*common.WeChatQueryR
 	}
 	xmlStr := fmt.Sprintf("<xml>%s</xml>", buf.String())
 
-	result, err := HTTPSC.PostData(wechat.QueryURL, "text/xml:charset=UTF-8", xmlStr)
+	result, err := HTTPSC.PostData(this.QueryURL, "text/xml:charset=UTF-8", xmlStr)
 	if err != nil {
 		return nil, err
 	}
