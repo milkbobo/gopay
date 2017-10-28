@@ -2,6 +2,8 @@ package client
 
 import (
 	"crypto/tls"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -71,6 +73,20 @@ func (c *HTTPSClient) PostData(url string, contentType string, data string) ([]b
 	resp, err := c.Post(url, contentType, strings.NewReader(data))
 	if err != nil {
 		panic(err)
+	}
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
+}
+
+// PostData 提交post数据
+func (c *HTTPSClient) GetData(url string) ([]byte, error) {
+	resp, err := c.Get(url)
+	if err != nil {
+		panic(err)
+	}
+
+	if resp.StatusCode != 200 {
+		return []byte{}, errors.New("http.stateCode != 200 : " + fmt.Sprintf("%+v", resp))
 	}
 	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)

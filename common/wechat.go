@@ -2,19 +2,19 @@ package common
 
 // WeChatResult 微信支付返回
 type WeChatReResult struct {
-	ReturnCode string `xml:"return_code"`
-	ReturnMsg  string `xml:"return_msg"`
+	//ReturnCode string `xml:"return_code"`
+	//ReturnMsg  string `xml:"return_msg"`
 
-	AppID      string `xml:"appid"`
-	MchID      string `xml:"mch_id"`
-	DeviceInfo string `xml:"device_info"`
-	NonceStr   string `xml:"nonce_str"`
-	Sign       string `xml:"sign"`
-	ResultCode string `xml:"result_code"`
-	ErrCode    string `xml:"err_code"`
-	ErrCodeDes string `xml:"err_code_des"`
+	//AppID      string `xml:"appid"`
+	//MchID      string `xml:"mch_id"`
+	//DeviceInfo string `xml:"device_info"`
+	//NonceStr   string `xml:"nonce_str"`
+	//Sign       string `xml:"sign"`
+	//ResultCode string `xml:"result_code"`
+	//ErrCode    string `xml:"err_code"`
+	//ErrCodeDes string `xml:"err_code_des"`
 
-	TradeType string `xml:"trade_type"`
+	//TradeType string `xml:"trade_type"`
 	PrepayID  string `xml:"prepay_id"`
 	CodeURL   string `xml:"code_url"`
 }
@@ -27,30 +27,30 @@ type WechatBaseResult struct {
 
 // WechatReturnData 返回通用数据
 type WechatReturnData struct {
-	AppID      string `xml:"appid,emitempty"`
-	MchID      string `xml:"mch_id,emitempty"`
-	DeviceInfo string `xml:"device_info,emitempty"`
-	NonceStr   string `xml:"nonce_str,emitempty"`
-	Sign       string `xml:"sign,emitempty"`
-	ResultCode string `xml:"result_code,emitempty"`
-	ErrCode    string `xml:"err_code,emitempty"`
-	ErrCodeDes string `xml:"err_code_des,emitempty"`
+	AppID      string `xml:"appid,omitempty"`
+	MchID      string `xml:"mch_id,omitempty"`
+	DeviceInfo string `xml:"device_info,omitempty"`
+	NonceStr   string `xml:"nonce_str,omitempty"`
+	Sign       string `xml:"sign,omitempty"`
+	ResultCode string `xml:"result_code,omitempty"`
+	ErrCode    string `xml:"err_code,omitempty"`
+	ErrCodeDes string `xml:"err_code_des,omitempty"`
 }
 
 // WechatResultData 结果通用数据
 type WechatResultData struct {
-	OpenID        string `xml:"openid,emitempty"`
-	IsSubscribe   string `xml:"is_subscribe,emitempty"`
-	TradeType     string `xml:"trade_type,emitempty"`
-	BankType      string `xml:"bank_type,emitempty"`
-	FeeType       string `xml:"fee_type,emitempty"`
-	TotalFee      int64  `xml:"total_fee,emitempty"`
-	CashFeeType   string `xml:"cash_fee_type,emitempty"`
-	CashFee       int64  `xml:"cash_fee,emitempty"`
-	TransactionID string `xml:"transaction_id,emitempty"`
-	OutTradeNO    string `xml:"out_trade_no,emitempty"`
-	Attach        string `xml:"attach,emitempty"`
-	TimeEnd       string `xml:"time_end,emitempty"`
+	OpenID        string `xml:"openid,omitempty"`
+	IsSubscribe   string `xml:"is_subscribe,omitempty"`
+	TradeType     string `xml:"trade_type,omitempty"`
+	BankType      string `xml:"bank_type,omitempty"`
+	FeeType       string `xml:"fee_type,omitempty"`
+	TotalFee      int64  `xml:"total_fee,omitempty"`
+	CashFeeType   string `xml:"cash_fee_type,omitempty"`
+	CashFee       int64  `xml:"cash_fee,omitempty"`
+	TransactionID string `xml:"transaction_id,omitempty"`
+	OutTradeNO    string `xml:"out_trade_no,omitempty"`
+	Attach        string `xml:"attach,omitempty"`
+	TimeEnd       string `xml:"time_end,omitempty"`
 }
 
 type WeChatPayResult struct {
@@ -61,6 +61,7 @@ type WeChatPayResult struct {
 
 type WeChatQueryResult struct {
 	WechatBaseResult
+	WeChatReResult
 	WechatReturnData
 	WechatResultData
 	TradeState     string `xml:"trade_state"`

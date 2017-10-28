@@ -49,6 +49,8 @@ func getPayClient(payMethod int64) common.PayClient {
 		return client.DefaultWechatWebClient()
 	case constant.WECHAT_APP:
 		return client.DefaultWechatAppClient()
+	case constant.WECHAT_MINI_PROGRAM:
+		return client.DefaultWechatMiniProgramClient()
 	}
 	return nil
 }

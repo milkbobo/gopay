@@ -4,10 +4,12 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/sha1"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
+	"github.com/go-errors/errors"
 	"net/url"
 	"sort"
 	"strings"
@@ -32,8 +34,9 @@ func DefaultAliAppClient() *AliAppClient {
 	return defaultAliAppClient
 }
 
-func (this *AliAppClient) Pay(charge *common.Charge)  (map[string]string, error) {
+func (this *AliAppClient) Pay(charge *common.Charge) (map[string]string, error) {
 	var m = make(map[string]string)
+	var bizContent = make(map[string]string)
 	m["app_id"] = this.AppID
 	m["method"] = "alipay.trade.app.pay"
 	m["format"] = "JSON"
@@ -41,46 +44,71 @@ func (this *AliAppClient) Pay(charge *common.Charge)  (map[string]string, error)
 	m["timestamp"] = time.Now().Format("2006-01-02 15:04:05")
 	m["version"] = "1.0"
 	m["notify_url"] = charge.CallbackURL
-	m["subject"] = charge.Describe
-	m["out_trade_no"] = charge.TradeNum
-	m["product_code"] = "QUICK_MSECURITY_PAY"
-	m["total_amount"] = fmt.Sprintf("%.2f", charge.MoneyFee)
+	m["sign_type"] = "RSA"
+	bizContent["subject"] = TruncatedText(charge.Describe, 32)
+	bizContent["out_trade_no"] = charge.TradeNum
+	bizContent["product_code"] = "QUICK_MSECURITY_PAY"
+	bizContent["total_amount"] = fmt.Sprintf("%.2f", charge.MoneyFee)
 
-	sign, err := this.GenSign(m)
+	bizContentJson, err := json.Marshal(bizContent)
 	if err != nil {
-		panic(err)
+		return map[string]string{}, errors.New("json.Marshal: " + err.Error())
 	}
+	m["biz_content"] = string(bizContentJson)
+
+	m["sign"] = this.GenSign(m)
+
+	return map[string]string{"orderString": this.ToURL(m)}, nil
+}
+
+// 订单查询
+func (this *AliAppClient) QueryOrder(outTradeNo string) (common.AliWebAppQueryResult, error) {
+	var m = make(map[string]string)
+	m["method"] = "alipay.trade.query"
+	m["app_id"] = this.AppID
+	m["format"] = "JSON"
+	m["charset"] = "utf-8"
+	m["timestamp"] = time.Now().Format("2006-01-02 15:04:05")
+	m["version"] = "1.0"
+	m["sign_type"] = "RSA"
+	bizContent := map[string]string{"out_trade_no": outTradeNo}
+	bizContentJson, err := json.Marshal(bizContent)
+	if err != nil {
+		return common.AliWebAppQueryResult{}, errors.New("json.Marshal: " + err.Error())
+	}
+	m["biz_content"] = string(bizContentJson)
+	sign := this.GenSign(m)
 	m["sign"] = sign
-	m["sign_type"] = "RSA2"
-	fmt.Println("sign:", sign)
-	return m, nil
+
+	url := fmt.Sprintf("%s?%s", "https://openapi.alipay.com/gateway.do", this.ToURL(m))
+
+	return GetAlipayApp(url)
 }
 
 // GenSign 产生签名
-func (this *AliAppClient) GenSign(m map[string]string) (string, error) {
-	delete(m, "sign_type")
-	delete(m, "sign")
+func (this *AliAppClient) GenSign(m map[string]string) string {
 	var data []string
+
 	for k, v := range m {
-		if v == "" {
-			continue
+		if v != "" && k != "sign" {
+			data = append(data, fmt.Sprintf(`%s=%s`, k, v))
 		}
-		data = append(data, fmt.Sprintf(`%s=%s`, k, v))
 	}
 	sort.Strings(data)
 	signData := strings.Join(data, "&")
-	fmt.Println(signData)
-	s := sha256.New()
+
+	s := sha1.New()
 	_, err := s.Write([]byte(signData))
 	if err != nil {
 		panic(err)
 	}
 	hashByte := s.Sum(nil)
-	signByte, err := this.PrivateKey.Sign(rand.Reader, hashByte, crypto.SHA256)
+	signByte, err := this.PrivateKey.Sign(rand.Reader, hashByte, crypto.SHA1)
 	if err != nil {
 		panic(err)
 	}
-	return url.QueryEscape(base64.StdEncoding.EncodeToString(signByte)), nil
+
+	return base64.StdEncoding.EncodeToString(signByte)
 }
 
 // CheckSign 检测签名
@@ -89,14 +117,23 @@ func (this *AliAppClient) CheckSign(signData, sign string) {
 	if err != nil {
 		panic(err)
 	}
-	s := sha256.New()
+	s := sha1.New()
 	_, err = s.Write([]byte(signData))
 	if err != nil {
 		panic(err)
 	}
 	hash := s.Sum(nil)
-	err = rsa.VerifyPKCS1v15(this.PublicKey, crypto.SHA256, hash, signByte)
+	err = rsa.VerifyPKCS1v15(this.PublicKey, crypto.SHA1, hash, signByte)
 	if err != nil {
 		panic(err)
 	}
+}
+
+// ToURL
+func (this *AliAppClient) ToURL(m map[string]string) string {
+	var buf []string
+	for k, v := range m {
+		buf = append(buf, fmt.Sprintf("%s=%s", k, url.QueryEscape(v)))
+	}
+	return strings.Join(buf, "&")
 }

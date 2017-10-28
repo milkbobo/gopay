@@ -44,36 +44,42 @@ func (this *AliWebClient) Pay(charge *common.Charge) (map[string]string, error) 
 	m["notify_url"] = charge.CallbackURL
 	m["return_url"] = charge.ReturnURL // 注意链接不能有&符号，否则会签名错误
 	m["out_trade_no"] = charge.TradeNum
-	m["subject"] = charge.Describe
+	m["subject"] = TruncatedText(charge.Describe,32)
 	m["total_fee"] = fmt.Sprintf("%.2f", charge.MoneyFee)
 	m["seller_id"] = this.SellerID
-	//m["payment_type"] = "1"
-	//m["show_url"] = charge.ShowURL
 
-	sign, err := this.GenSign(m)
-	if err != nil {
-		panic(err)
-	}
+	sign := this.GenSign(m)
+
 	m["sign"] = sign
 	m["sign_type"] = "RSA"
-	fmt.Println("sign:", sign)
-	return map[string]string{"url":this.ToURL(m)}, nil
+	return map[string]string{"url": ToURL(this.PayURL,m)}, nil
+}
+
+// 订单查询
+func (this *AliWebClient) QueryOrder(outTradeNo string) (common.AliWebQueryResult,error) {
+	var m = make(map[string]string)
+	m["service"] = "single_trade_query"
+	m["partner"] = this.PartnerID
+	m["_input_charset"] = "utf-8"
+	m["out_trade_no"] = outTradeNo
+
+	sign := this.GenSign(m)
+
+	m["sign"] = sign
+	m["sign_type"] = "RSA"
+	return GetAlipay(ToURL(this.PayURL,m))
 }
 
 // GenSign 产生签名
-func (this *AliWebClient) GenSign(m map[string]string) (string, error) {
-	delete(m, "sign_type")
-	delete(m, "sign")
+func (this *AliWebClient) GenSign(m map[string]string) string {
 	var data []string
 	for k, v := range m {
-		if v == "" {
-			continue
+		if v != "" && k != "sign" && k != "sign_type" {
+			data = append(data, fmt.Sprintf(`%s=%s`, k, v))
 		}
-		data = append(data, fmt.Sprintf(`%s=%s`, k, v))
 	}
 	sort.Strings(data)
 	signData := strings.Join(data, "&")
-	fmt.Println(signData)
 	s := sha1.New()
 	_, err := s.Write([]byte(signData))
 	if err != nil {
@@ -84,16 +90,7 @@ func (this *AliWebClient) GenSign(m map[string]string) (string, error) {
 	if err != nil {
 		panic(err)
 	}
-	return url.QueryEscape(base64.StdEncoding.EncodeToString(signByte)), nil
-}
-
-// ToURL
-func (this *AliWebClient) ToURL(m map[string]string) string {
-	var buf []string
-	for k, v := range m {
-		buf = append(buf, fmt.Sprintf("%s=%s", k, v))
-	}
-	return fmt.Sprintf("%s?%s", this.PayURL, strings.Join(buf, "&"))
+	return url.QueryEscape(base64.StdEncoding.EncodeToString(signByte))
 }
 
 // CheckSign 检测签名
