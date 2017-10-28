@@ -4,13 +4,15 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/milkbobo/gopay/client"
-	"github.com/milkbobo/gopay/common"
-	"github.com/milkbobo/gopay/util"
 	"io/ioutil"
 	"net/http"
 	"sort"
 	"strings"
+
+	"github.com/fishedee/encoding"
+	"github.com/milkbobo/gopay/client"
+	"github.com/milkbobo/gopay/common"
+	"github.com/milkbobo/gopay/util"
 )
 
 func AliWebCallback(w http.ResponseWriter, r *http.Request) (*common.AliWebPayResult, error) {
@@ -48,6 +50,11 @@ func AliWebCallback(w http.ResponseWriter, r *http.Request) (*common.AliWebPayRe
 
 // 支付宝app支付回调
 func AliAppCallback(w http.ResponseWriter, r *http.Request) (*common.AliWebPayResult, error) {
+	var result string
+	defer func() {
+		w.Write([]byte(result))
+	}()
+
 	var m = make(map[string]string)
 	var signSlice []string
 	r.ParseForm()
@@ -61,24 +68,30 @@ func AliAppCallback(w http.ResponseWriter, r *http.Request) (*common.AliWebPayRe
 	sort.Strings(signSlice)
 	signData := strings.Join(signSlice, "&")
 	if m["sign_type"] != "RSA" {
+		result = "error"
 		panic("签名类型未知")
 	}
 
 	client.DefaultAliAppClient().CheckSign(signData, m["sign"])
 
-	var aliPay common.AliWebPayResult
-	err := util.MapStringToStruct(m, &aliPay)
+	mByte, err := encoding.EncodeJson(m)
 	if err != nil {
-		w.Write([]byte("error"))
+		result = "error"
 		panic(err)
 	}
 
-	w.Write([]byte("success"))
+	var aliPay common.AliWebPayResult
+	err = encoding.DecodeJson(mByte, &aliPay)
+	if err != nil {
+		result = "error"
+		panic(fmt.Sprintf("m is %v, err is %v", m, err))
+	}
+	result = "success"
 	return &aliPay, nil
 }
 
 // WeChatCallback 微信支付
-func WeChatCallback(w http.ResponseWriter, r *http.Request) (*common.WeChatPayResult, error) {
+func WeChatWebCallback(w http.ResponseWriter, r *http.Request) (*common.WeChatPayResult, error) {
 	var returnCode = "FAIL"
 	var returnMsg = ""
 	defer func() {
@@ -118,13 +131,71 @@ func WeChatCallback(w http.ResponseWriter, r *http.Request) (*common.WeChatPayRe
 		}
 		signData = append(signData, fmt.Sprintf("%v=%v", k, v))
 	}
-	WeChatPaySign := m["sign"]
-	mySign, err := client.DefaultWechatWebClient().GenSign(m)
+
+	key := client.DefaultWechatAppClient().Key
+
+	mySign, err := client.WechatGenSign(key, m)
 	if err != nil {
+		return &reXML, err
+	}
+
+	if mySign != m["sign"] {
+		panic(errors.New("签名交易错误"))
+	}
+
+	returnCode = "SUCCESS"
+	return &reXML, nil
+}
+
+func WeChatAppCallback(w http.ResponseWriter, r *http.Request) (*common.WeChatPayResult, error) {
+	var returnCode = "FAIL"
+	var returnMsg = ""
+	defer func() {
+		formatStr := `<xml><return_code><![CDATA[%s]]></return_code>
+                  <return_msg>![CDATA[%s]]</return_msg></xml>`
+		returnBody := fmt.Sprintf(formatStr, returnCode, returnMsg)
+		w.Write([]byte(returnBody))
+	}()
+	var reXML common.WeChatPayResult
+	//body := cb.Ctx.Input.RequestBody
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		//log.Error(string(body))
+		returnCode = "FAIL"
+		returnMsg = "Bodyerror"
+		panic(err)
+	}
+	err = xml.Unmarshal(body, &reXML)
+	if err != nil {
+		//log.Error(err, string(body))
+		returnMsg = "参数错误"
+		returnCode = "FAIL"
 		panic(err)
 	}
 
-	if mySign != WeChatPaySign {
+	if reXML.ReturnCode != "SUCCESS" {
+		//log.Error(reXML)
+		returnCode = "FAIL"
+		return &reXML, errors.New(reXML.ReturnCode)
+	}
+	m := util.XmlToMap(body)
+
+	var signData []string
+	for k, v := range m {
+		if k == "sign" {
+			continue
+		}
+		signData = append(signData, fmt.Sprintf("%v=%v", k, v))
+	}
+
+	key := client.DefaultWechatAppClient().Key
+
+	mySign, err := client.WechatGenSign(key, m)
+	if err != nil {
+		return &reXML, err
+	}
+
+	if mySign != m["sign"] {
 		panic(errors.New("签名交易错误"))
 	}
 
