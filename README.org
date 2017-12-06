@@ -8,10 +8,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/guidao/gopay"
-	"github.com/guidao/gopay/client"
-	"github.com/guidao/gopay/common"
-	"github.com/guidao/gopay/constant"
+	"github.com/milkbobo/gopay"
+	"github.com/milkbobo/gopay/client"
+	"github.com/milkbobo/gopay/common"
+	"github.com/milkbobo/gopay/constant"
 	"net/http"
 )
 
