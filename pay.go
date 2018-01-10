@@ -5,8 +5,6 @@ import (
 	"github.com/milkbobo/gopay/client"
 	"github.com/milkbobo/gopay/common"
 	"github.com/milkbobo/gopay/constant"
-	//"github.com/milkbobo/gopay/util"
-	//"strconv"
 )
 
 // 获取支付接口

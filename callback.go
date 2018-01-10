@@ -9,10 +9,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fishedee/encoding"
 	"github.com/milkbobo/gopay/client"
 	"github.com/milkbobo/gopay/common"
 	"github.com/milkbobo/gopay/util"
+	"encoding/json"
 )
 
 func AliWebCallback(w http.ResponseWriter, r *http.Request) (*common.AliWebPayResult, error) {
@@ -74,14 +74,14 @@ func AliAppCallback(w http.ResponseWriter, r *http.Request) (*common.AliWebPayRe
 
 	client.DefaultAliAppClient().CheckSign(signData, m["sign"])
 
-	mByte, err := encoding.EncodeJson(m)
+	mByte, err := json.Marshal(m)
 	if err != nil {
 		result = "error"
 		panic(err)
 	}
 
 	var aliPay common.AliWebPayResult
-	err = encoding.DecodeJson(mByte, &aliPay)
+	err = json.Unmarshal(mByte, &aliPay)
 	if err != nil {
 		result = "error"
 		panic(fmt.Sprintf("m is %v, err is %v", m, err))
