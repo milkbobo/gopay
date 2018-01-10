@@ -56,6 +56,7 @@ func (this *WechatMiniProgramClient) Pay(charge *common.Charge) (map[string]stri
 	}
 
 	var c = make(map[string]string)
+	c["appId"] = this.AppID
 	c["timeStamp"] = fmt.Sprintf("%d", time.Now().Unix())
 	c["nonceStr"] = util.RandomStr()
 	c["package"] = fmt.Sprintf("prepay_id=%s", xmlRe.PrepayID)
