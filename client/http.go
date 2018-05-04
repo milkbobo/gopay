@@ -24,7 +24,7 @@ var (
 
 func init() {
 	HTTPC = &HTTPClient{}
-	HTTPSC = NewHTTPSClient()
+	HTTPSC = NewHTTPSClient([]byte{}, []byte{})
 }
 
 // HTTPSClient HTTPS客户端结构
@@ -37,28 +37,29 @@ func GetDefaultClient() *HTTPSClient {
 	return HTTPSC
 }
 
-// NewHTTPSClient 新建https客户端
-// func NewHTTPSClient(certFile string, keyFile string) *HTTPSClient {
-// 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-// 	if err != nil {
-// 		log.Error("load x509 cert error:", err)
-// 		return nil
-// 	}
-// 	config := &tls.Config{
-// 		Certificates: []tls.Certificate{cert},
-// 	}
-// 	config.BuildNameToCertificate()
-// 	tr := &http.Transport{TLSClientConfig: config}
-// 	client := &http.Client{Transport: tr}
-// 	return &HTTPSClient{
-// 		Client: *client,
-// 	}
-// }
-
 // NewHTTPSClient 获取默认https客户端
-func NewHTTPSClient() *HTTPSClient {
-	config := &tls.Config{InsecureSkipVerify: true}
-	tr := &http.Transport{TLSClientConfig: config}
+func NewHTTPSClient(certPEMBlock, keyPEMBlock []byte) *HTTPSClient {
+	config := new(tls.Config)
+	if len(certPEMBlock) != 0 && len(keyPEMBlock) != 0 {
+		cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+		if err != nil {
+			panic("load x509 cert error:" + err.Error())
+			return nil
+		}
+		config = &tls.Config{
+			Certificates: []tls.Certificate{
+				cert,
+			},
+		}
+	} else {
+		config = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: config,
+	}
 	client := http.Client{
 		Transport: tr,
 		Timeout:   15 * time.Second,

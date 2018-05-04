@@ -7,9 +7,9 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
-	"github.com/go-errors/errors"
 	"net/url"
 	"sort"
 	"strings"
@@ -59,6 +59,10 @@ func (this *AliAppClient) Pay(charge *common.Charge) (map[string]string, error) 
 	m["sign"] = this.GenSign(m)
 
 	return map[string]string{"orderString": this.ToURL(m)}, nil
+}
+
+func (this *AliAppClient) PayToClient(charge *common.Charge) (map[string]string, error) {
+	return map[string]string{}, errors.New("暂未开发该功能")
 }
 
 // 订单查询

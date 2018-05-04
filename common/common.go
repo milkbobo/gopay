@@ -4,9 +4,10 @@ import ()
 
 // PayClient 支付客户端接口
 type PayClient interface {
+	// 用户下单付款
 	Pay(charge *Charge) (map[string]string, error)
-	//检查签名
-	//CheckSign(data []byte, sign []byte) error
+	// 付款给用户
+	PayToClient(charge *Charge) (map[string]string, error)
 }
 
 // Charge 支付参数
@@ -21,6 +22,8 @@ type Charge struct {
 	ShowURL     string  `json:"showURL,omitempty"`
 	Describe    string  `json:"describe,omitempty"`
 	OpenID      string  `json:"openid,omitempty"`
+	CheckName   bool    `json:"check_name,omitempty"`
+	ReUserName  string  `json:"re_user_name,omitempty"`
 }
 
 //PayCallback 支付返回

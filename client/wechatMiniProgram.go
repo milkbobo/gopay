@@ -11,6 +11,10 @@ import (
 var defaultWechatMiniProgramClient *WechatMiniProgramClient
 
 func InitWxMiniProgramClient(c *WechatMiniProgramClient) {
+	if len(c.PrivateKey) != 0 && len(c.PublicKey) != 0 {
+		c.httpsClient = NewHTTPSClient(c.PublicKey, c.PrivateKey)
+	}
+
 	defaultWechatMiniProgramClient = c
 }
 
@@ -20,12 +24,12 @@ func DefaultWechatMiniProgramClient() *WechatMiniProgramClient {
 
 // WechatMiniProgramClient 微信小程序
 type WechatMiniProgramClient struct {
-	AppID       string // 公众账号ID
-	MchID       string // 商户号ID
-	CallbackURL string // 回调地址
-	Key         string // 密钥
-	PayURL      string // 支付地址
-	QueryURL    string // 查询地址
+	AppID       string       // 公众账号ID
+	MchID       string       // 商户号ID
+	Key         string       // 密钥
+	PrivateKey  []byte       // 私钥文件内容
+	PublicKey   []byte       // 公钥文件内容
+	httpsClient *HTTPSClient // 双向证书链接
 }
 
 // Pay 支付
@@ -50,7 +54,7 @@ func (this *WechatMiniProgramClient) Pay(charge *common.Charge) (map[string]stri
 	m["sign"] = sign
 
 	// 转出xml结构
-	xmlRe, err := PostWechat(this.PayURL, m)
+	xmlRe, err := PostWechat("https://api.mch.weixin.qq.com/pay/unifiedorder", m, nil)
 	if err != nil {
 		return map[string]string{}, err
 	}
@@ -66,7 +70,13 @@ func (this *WechatMiniProgramClient) Pay(charge *common.Charge) (map[string]stri
 		return map[string]string{}, errors.New("WechatWeb: " + err.Error())
 	}
 	c["paySign"] = sign2
+	delete(c, "appId")
 	return c, nil
+}
+
+// 支付到用户的微信账号
+func (this *WechatMiniProgramClient) PayToClient(charge *common.Charge) (map[string]string, error) {
+	return WachatCompanyChange(this.AppID, this.MchID, this.Key, this.httpsClient, charge)
 }
 
 // QueryOrder 查询订单
@@ -84,5 +94,5 @@ func (this *WechatMiniProgramClient) QueryOrder(tradeNum string) (common.WeChatQ
 
 	m["sign"] = sign
 
-	return PostWechat("https://api.mch.weixin.qq.com/pay/orderquery", m)
+	return PostWechat("https://api.mch.weixin.qq.com/pay/orderquery", m, nil)
 }

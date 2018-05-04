@@ -7,42 +7,48 @@ import (
 	"github.com/milkbobo/gopay/constant"
 )
 
-// 获取支付接口
+// 用户下单支付接口
 func Pay(charge *common.Charge) (map[string]string, error) {
 	err := checkCharge(charge)
 	if err != nil {
-		//log.Error(err, charge)
-		panic(err)
+		return map[string]string{}, err
 	}
 
-	ct := getPayClient(charge.PayMethod)
+	ct := getPayType(charge.PayMethod)
 	re, err := ct.Pay(charge)
-	if err != nil {
-		//log.Error("支付失败:", err, charge)
-		panic(err)
-	}
 	return re, err
 }
 
-// 验证内容
-func checkCharge(charge *common.Charge) error {
-	if charge.PayMethod < 0 {
-		return errors.New("payMethod less than 0")
+// 付款给用户接口
+func PayToClient(charge *common.Charge) (map[string]string, error) {
+	err := checkCharge(charge)
+	if err != nil {
+		return nil, err
 	}
-	if charge.MoneyFee < 0 {
-		return errors.New("totalFee less than 0")
+	ct := getPayType(charge.PayMethod)
+	re, err := ct.PayToClient(charge)
+	return re, err
+}
+
+// 验证支付内容
+func checkCharge(charge *common.Charge) error {
+	if charge.PayMethod <= 0 {
+		return errors.New("PayMethod不能少于等于0")
+	}
+	if charge.MoneyFee <= 0 {
+		return errors.New("MoneyFee不能少于等于0")
 	}
 	return nil
 }
 
-// getPayClient 得到需要支付的客户端
-func getPayClient(payMethod int64) common.PayClient {
+// getPayType 得到需要支付的类型
+func getPayType(payMethod int64) common.PayClient {
 	//如果使用余额支付
 	switch payMethod {
-	 case constant.ALI_WEB:
-	 	return client.DefaultAliWebClient()
-	 case constant.ALI_APP:
-	 	return client.DefaultAliAppClient()
+	case constant.ALI_WEB:
+		return client.DefaultAliWebClient()
+	case constant.ALI_APP:
+		return client.DefaultAliAppClient()
 	case constant.WECHAT_WEB:
 		return client.DefaultWechatWebClient()
 	case constant.WECHAT_APP:

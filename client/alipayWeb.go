@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
 	"net/url"
@@ -23,7 +24,6 @@ type AliWebClient struct {
 	CallbackURL string          // 回调接口
 	PrivateKey  *rsa.PrivateKey // 私钥
 	PublicKey   *rsa.PublicKey  // 公钥
-	PayURL      string          // 支付网管地址
 }
 
 func InitAliWebClient(c *AliWebClient) {
@@ -44,7 +44,7 @@ func (this *AliWebClient) Pay(charge *common.Charge) (map[string]string, error) 
 	m["notify_url"] = charge.CallbackURL
 	m["return_url"] = charge.ReturnURL // 注意链接不能有&符号，否则会签名错误
 	m["out_trade_no"] = charge.TradeNum
-	m["subject"] = TruncatedText(charge.Describe,32)
+	m["subject"] = TruncatedText(charge.Describe, 32)
 	m["total_fee"] = AliyunMoneyFeeToString(charge.MoneyFee)
 	m["seller_id"] = this.SellerID
 
@@ -52,11 +52,15 @@ func (this *AliWebClient) Pay(charge *common.Charge) (map[string]string, error) 
 
 	m["sign"] = sign
 	m["sign_type"] = "RSA"
-	return map[string]string{"url": ToURL(this.PayURL,m)}, nil
+	return map[string]string{"url": ToURL("https://mapi.alipay.com/gateway.do", m)}, nil
+}
+
+func (this *AliWebClient) PayToClient(charge *common.Charge) (map[string]string, error) {
+	return map[string]string{}, errors.New("暂未开发该功能")
 }
 
 // 订单查询
-func (this *AliWebClient) QueryOrder(outTradeNo string) (common.AliWebQueryResult,error) {
+func (this *AliWebClient) QueryOrder(outTradeNo string) (common.AliWebQueryResult, error) {
 	var m = make(map[string]string)
 	m["service"] = "single_trade_query"
 	m["partner"] = this.PartnerID
@@ -67,7 +71,7 @@ func (this *AliWebClient) QueryOrder(outTradeNo string) (common.AliWebQueryResul
 
 	m["sign"] = sign
 	m["sign_type"] = "RSA"
-	return GetAlipay(ToURL(this.PayURL,m))
+	return GetAlipay(ToURL("https://mapi.alipay.com/gateway.do", m))
 }
 
 // GenSign 产生签名

@@ -1,10 +1,10 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
 	"github.com/milkbobo/gopay/util"
-	"errors"
 	"time"
 )
 
@@ -20,12 +20,12 @@ func DefaultWechatWebClient() *WechatWebClient {
 
 // WechatWebClient 微信公众号支付
 type WechatWebClient struct {
-	AppID       string // 公众账号ID
-	MchID       string // 商户号ID
-	CallbackURL string // 回调地址
-	Key         string // 密钥
-	PayURL      string // 支付地址
-	QueryURL    string // 查询地址
+	AppID       string       // 公众账号ID
+	MchID       string       // 商户号ID
+	Key         string       // 密钥
+	PrivateKey  []byte       // 私钥文件内容
+	PublicKey   []byte       // 公钥文件内容
+	httpsClient *HTTPSClient // 双向证书链接
 }
 
 // Pay 支付
@@ -34,7 +34,7 @@ func (this *WechatWebClient) Pay(charge *common.Charge) (map[string]string, erro
 	m["appid"] = this.AppID
 	m["mch_id"] = this.MchID
 	m["nonce_str"] = util.RandomStr()
-	m["body"] = TruncatedText(charge.Describe,32)
+	m["body"] = TruncatedText(charge.Describe, 32)
 	m["out_trade_no"] = charge.TradeNum
 	m["total_fee"] = WechatMoneyFeeToString(charge.MoneyFee)
 	m["spbill_create_ip"] = util.LocalIP()
@@ -43,15 +43,15 @@ func (this *WechatWebClient) Pay(charge *common.Charge) (map[string]string, erro
 	m["openid"] = charge.OpenID
 	m["sign_type"] = "MD5"
 
-	sign ,err := WechatGenSign(this.Key,m)
+	sign, err := WechatGenSign(this.Key, m)
 	if err != nil {
 		return map[string]string{}, err
 	}
 	m["sign"] = sign
 
 	// 转出xml结构
-	xmlRe ,err := PostWechat(this.PayURL,m)
-	if  err != nil{
+	xmlRe, err := PostWechat("https://api.mch.weixin.qq.com/pay/unifiedorder", m, nil)
+	if err != nil {
 		return map[string]string{}, err
 	}
 
@@ -61,13 +61,18 @@ func (this *WechatWebClient) Pay(charge *common.Charge) (map[string]string, erro
 	c["nonceStr"] = util.RandomStr()
 	c["package"] = fmt.Sprintf("prepay_id=%s", xmlRe.PrepayID)
 	c["signType"] = "MD5"
-	sign2 ,err := WechatGenSign(this.Key,c)
+	sign2, err := WechatGenSign(this.Key, c)
 	if err != nil {
 		return map[string]string{}, errors.New("WechatWeb: " + err.Error())
 	}
 	c["paySign"] = sign2
 
 	return c, nil
+}
+
+// 支付到用户的微信账号
+func (this *WechatWebClient) PayToClient(charge *common.Charge) (map[string]string, error) {
+	return WachatCompanyChange(this.AppID, this.MchID, this.Key, this.httpsClient, charge)
 }
 
 // QueryOrder 查询订单
@@ -78,12 +83,12 @@ func (this *WechatWebClient) QueryOrder(tradeNum string) (common.WeChatQueryResu
 	m["out_trade_no"] = tradeNum
 	m["nonce_str"] = util.RandomStr()
 
-	sign ,err := WechatGenSign(this.Key,m)
+	sign, err := WechatGenSign(this.Key, m)
 	if err != nil {
 		return common.WeChatQueryResult{}, err
 	}
 
 	m["sign"] = sign
 
-	return PostWechat("https://api.mch.weixin.qq.com/pay/orderquery",m)
+	return PostWechat("https://api.mch.weixin.qq.com/pay/orderquery", m, nil)
 }
