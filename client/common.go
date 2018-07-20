@@ -184,9 +184,8 @@ func ToURL(payUrl string, m map[string]string) string {
 
 // 微信金额浮点转字符串
 func WechatMoneyFeeToString(moneyFee float64) string {
-	aDecimal := decimal.NewFromFloat(moneyFee)
-	bDecimal := decimal.NewFromFloat(100)
-	return aDecimal.Mul(bDecimal).Truncate(0).String()
+	aDecimal := decimal.NewFromFloat(moneyFee * 100)
+	return aDecimal.Truncate(0).String()
 }
 
 // 支付宝金额转字符串
