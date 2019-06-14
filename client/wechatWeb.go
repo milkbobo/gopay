@@ -3,8 +3,8 @@ package client
 import (
 	"errors"
 	"fmt"
-	"github.com/fishedee/sdk/pay/common"
-	"github.com/fishedee/sdk/pay/util"
+	"github.com/milkbobo/gopay/common"
+	"github.com/milkbobo/gopay/util"
 	"time"
 )
 

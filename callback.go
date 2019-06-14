@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/fishedee/encoding"
 	"io/ioutil"
 	"net/http"
 	"sort"
