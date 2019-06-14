@@ -55,6 +55,10 @@ func (this *AliWebClient) Pay(charge *common.Charge) (map[string]string, error) 
 	return map[string]string{"url": ToURL("https://mapi.alipay.com/gateway.do", m)}, nil
 }
 
+func (this *AliWebClient) CloseOrder(charge *common.Charge) (map[string]string, error) {
+	return map[string]string{}, errors.New("暂未开发该功能")
+}
+
 func (this *AliWebClient) PayToClient(charge *common.Charge) (map[string]string, error) {
 	return map[string]string{}, errors.New("暂未开发该功能")
 }

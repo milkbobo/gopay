@@ -49,6 +49,48 @@ func WachatCompanyChange(mchAppid, mchid, key string, conn *HTTPSClient, charge 
 	return struct2Map(result)
 }
 
+// 微信关闭订单
+func WachatCloseOrder(appid, mchid, key string, outTradeNo string) (common.WeChatQueryResult, error) {
+	var m = make(map[string]string)
+	m["appid"] = appid
+	m["mch_id"] = mchid
+	m["nonce_str"] = util.RandomStr()
+	m["out_trade_no"] = outTradeNo
+	m["sign_type"] = "MD5"
+
+	sign, err := WechatGenSign(key, m)
+	if err != nil {
+		return common.WeChatQueryResult{}, err
+	}
+	m["sign"] = sign
+
+	// 转出xml结构
+	result, err := PostWechat("https://api.mch.weixin.qq.com/pay/closeorder", m, nil)
+	if err != nil {
+		return common.WeChatQueryResult{}, err
+	}
+
+	return result, err
+}
+
+// 微信订单查询
+func WachatQueryOrder(appID, mchID, key, tradeNum string) (common.WeChatQueryResult, error) {
+	var m = make(map[string]string)
+	m["appid"] = appID
+	m["mch_id"] = mchID
+	m["out_trade_no"] = tradeNum
+	m["nonce_str"] = util.RandomStr()
+
+	sign, err := WechatGenSign(key, m)
+	if err != nil {
+		return common.WeChatQueryResult{}, err
+	}
+
+	m["sign"] = sign
+
+	return PostWechat("https://api.mch.weixin.qq.com/pay/orderquery", m, nil)
+}
+
 func WechatGenSign(key string, m map[string]string) (string, error) {
 	var signData []string
 	for k, v := range m {

@@ -61,6 +61,10 @@ func (this *AliAppClient) Pay(charge *common.Charge) (map[string]string, error) 
 	return map[string]string{"orderString": this.ToURL(m)}, nil
 }
 
+func (this *AliAppClient) CloseOrder(charge *common.Charge) (map[string]string, error) {
+	return map[string]string{}, errors.New("暂未开发该功能")
+}
+
 func (this *AliAppClient) PayToClient(charge *common.Charge) (map[string]string, error) {
 	return map[string]string{}, errors.New("暂未开发该功能")
 }

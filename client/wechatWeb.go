@@ -3,8 +3,8 @@ package client
 import (
 	"errors"
 	"fmt"
-	"github.com/milkbobo/gopay/common"
-	"github.com/milkbobo/gopay/util"
+	"github.com/fishedee/sdk/pay/common"
+	"github.com/fishedee/sdk/pay/util"
 	"time"
 )
 
@@ -70,6 +70,11 @@ func (this *WechatWebClient) Pay(charge *common.Charge) (map[string]string, erro
 	return c, nil
 }
 
+// 关闭订单
+func (this *WechatWebClient) CloseOrder(outTradeNo string) (common.WeChatQueryResult, error) {
+	return WachatCloseOrder(this.AppID, this.MchID, this.Key, outTradeNo)
+}
+
 // 支付到用户的微信账号
 func (this *WechatWebClient) PayToClient(charge *common.Charge) (map[string]string, error) {
 	return WachatCompanyChange(this.AppID, this.MchID, this.Key, this.httpsClient, charge)
@@ -77,18 +82,5 @@ func (this *WechatWebClient) PayToClient(charge *common.Charge) (map[string]stri
 
 // QueryOrder 查询订单
 func (this *WechatWebClient) QueryOrder(tradeNum string) (common.WeChatQueryResult, error) {
-	var m = make(map[string]string)
-	m["appid"] = this.AppID
-	m["mch_id"] = this.MchID
-	m["out_trade_no"] = tradeNum
-	m["nonce_str"] = util.RandomStr()
-
-	sign, err := WechatGenSign(this.Key, m)
-	if err != nil {
-		return common.WeChatQueryResult{}, err
-	}
-
-	m["sign"] = sign
-
-	return PostWechat("https://api.mch.weixin.qq.com/pay/orderquery", m, nil)
+	return WachatQueryOrder(this.AppID, this.MchID, this.Key, tradeNum)
 }
