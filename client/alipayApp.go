@@ -1,28 +1,21 @@
 package client
 
 import (
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha1"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
-	"net/url"
-	"sort"
-	"strings"
 	"time"
 )
 
 var defaultAliAppClient *AliAppClient
 
 type AliAppClient struct {
+	*AliPayClient
 	SellerID   string //合作者ID
-	AppID      string // 应用ID
-	PrivateKey *rsa.PrivateKey
-	PublicKey  *rsa.PublicKey
+	//AppID      string // 应用ID
+	//PrivateKey *rsa.PrivateKey
+	//PublicKey  *rsa.PublicKey
 }
 
 func InitAliAppClient(c *AliAppClient) {
@@ -65,9 +58,9 @@ func (this *AliAppClient) CloseOrder(charge *common.Charge) (map[string]string, 
 	return map[string]string{}, errors.New("暂未开发该功能")
 }
 
-func (this *AliAppClient) PayToClient(charge *common.Charge) (map[string]string, error) {
-	return map[string]string{}, errors.New("暂未开发该功能")
-}
+//func (this *AliAppClient) PayToClient(charge *common.Charge) (map[string]string, error) {
+//	return map[string]string{}, errors.New("暂未开发该功能")
+//}
 
 // 订单查询
 func (this *AliAppClient) QueryOrder(outTradeNo string) (common.AliWebAppQueryResult, error) {
@@ -93,55 +86,55 @@ func (this *AliAppClient) QueryOrder(outTradeNo string) (common.AliWebAppQueryRe
 	return GetAlipayApp(url)
 }
 
-// GenSign 产生签名
-func (this *AliAppClient) GenSign(m map[string]string) string {
-	var data []string
-
-	for k, v := range m {
-		if v != "" && k != "sign" {
-			data = append(data, fmt.Sprintf(`%s=%s`, k, v))
-		}
-	}
-	sort.Strings(data)
-	signData := strings.Join(data, "&")
-
-	s := sha1.New()
-	_, err := s.Write([]byte(signData))
-	if err != nil {
-		panic(err)
-	}
-	hashByte := s.Sum(nil)
-	signByte, err := this.PrivateKey.Sign(rand.Reader, hashByte, crypto.SHA1)
-	if err != nil {
-		panic(err)
-	}
-
-	return base64.StdEncoding.EncodeToString(signByte)
-}
-
-// CheckSign 检测签名
-func (this *AliAppClient) CheckSign(signData, sign string) {
-	signByte, err := base64.StdEncoding.DecodeString(sign)
-	if err != nil {
-		panic(err)
-	}
-	s := sha1.New()
-	_, err = s.Write([]byte(signData))
-	if err != nil {
-		panic(err)
-	}
-	hash := s.Sum(nil)
-	err = rsa.VerifyPKCS1v15(this.PublicKey, crypto.SHA1, hash, signByte)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// ToURL
-func (this *AliAppClient) ToURL(m map[string]string) string {
-	var buf []string
-	for k, v := range m {
-		buf = append(buf, fmt.Sprintf("%s=%s", k, url.QueryEscape(v)))
-	}
-	return strings.Join(buf, "&")
-}
+//// GenSign 产生签名
+//func (this *AliAppClient) GenSign(m map[string]string) string {
+//	var data []string
+//
+//	for k, v := range m {
+//		if v != "" && k != "sign" {
+//			data = append(data, fmt.Sprintf(`%s=%s`, k, v))
+//		}
+//	}
+//	sort.Strings(data)
+//	signData := strings.Join(data, "&")
+//
+//	s := sha1.New()
+//	_, err := s.Write([]byte(signData))
+//	if err != nil {
+//		panic(err)
+//	}
+//	hashByte := s.Sum(nil)
+//	signByte, err := this.PrivateKey.Sign(rand.Reader, hashByte, crypto.SHA1)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	return base64.StdEncoding.EncodeToString(signByte)
+//}
+//
+////CheckSign 检测签名
+//func (this *AliAppClient) CheckSign(signData, sign string) {
+//	signByte, err := base64.StdEncoding.DecodeString(sign)
+//	if err != nil {
+//		panic(err)
+//	}
+//	s := sha1.New()
+//	_, err = s.Write([]byte(signData))
+//	if err != nil {
+//		panic(err)
+//	}
+//	hash := s.Sum(nil)
+//	err = rsa.VerifyPKCS1v15(this.PublicKey, crypto.SHA1, hash, signByte)
+//	if err != nil {
+//		panic(err)
+//	}
+//}
+//
+//// ToURL
+//func (this *AliAppClient) ToURL(m map[string]string) string {
+//	var buf []string
+//	for k, v := range m {
+//		buf = append(buf, fmt.Sprintf("%s=%s", k, url.QueryEscape(v)))
+//	}
+//	return strings.Join(buf, "&")
+//}
