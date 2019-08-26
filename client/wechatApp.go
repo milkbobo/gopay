@@ -80,6 +80,9 @@ func (this *WechatAppClient) CloseOrder(outTradeNo string) (common.WeChatQueryRe
 
 // 支付到用户的微信账号
 func (this *WechatAppClient) PayToClient(charge *common.Charge) (map[string]string, error) {
+
+	this.httpsClient = NewHTTPSClient(this.PublicKey, this.PrivateKey)
+
 	return WachatCompanyChange(this.AppID, this.MchID, this.Key, this.httpsClient, charge)
 }
 

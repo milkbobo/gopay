@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -33,7 +33,7 @@ func (this *AliPayClient) PayToClient(charge *common.Charge) (map[string]string,
 	m["charset"] = "utf-8"
 	m["timestamp"] = time.Now().Format("2006-01-02 15:04:05")
 	m["version"] = "1.0"
-	m["sign_type"] = "RSA"
+	m["sign_type"] = "RSA2"
 
 	bizContent["out_biz_no"] = charge.TradeNum
 	bizContent["amount"] = AliyunMoneyFeeToString(charge.MoneyFee)
@@ -82,13 +82,13 @@ func (this *AliPayClient) GenSign(m map[string]string) string {
 	sort.Strings(data)
 	signData := strings.Join(data, "&")
 
-	s := sha1.New()
+	s := sha256.New()
 	_, err := s.Write([]byte(signData))
 	if err != nil {
 		panic(err)
 	}
 	hashByte := s.Sum(nil)
-	signByte, err := this.PrivateKey.Sign(rand.Reader, hashByte, crypto.SHA1)
+	signByte, err := this.PrivateKey.Sign(rand.Reader, hashByte, crypto.SHA256)
 	if err != nil {
 		panic(err)
 	}
@@ -102,13 +102,13 @@ func (this *AliPayClient) CheckSign(signData, sign string) {
 	if err != nil {
 		panic(err)
 	}
-	s := sha1.New()
+	s := sha256.New()
 	_, err = s.Write([]byte(signData))
 	if err != nil {
 		panic(err)
 	}
 	hash := s.Sum(nil)
-	err = rsa.VerifyPKCS1v15(this.PublicKey, crypto.SHA1, hash, signByte)
+	err = rsa.VerifyPKCS1v15(this.PublicKey, crypto.SHA256, hash, signByte)
 	if err != nil {
 		panic(err)
 	}

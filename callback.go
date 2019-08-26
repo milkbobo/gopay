@@ -67,7 +67,7 @@ func AliAppCallback(w http.ResponseWriter, r *http.Request) (*common.AliWebPayRe
 	}
 	sort.Strings(signSlice)
 	signData := strings.Join(signSlice, "&")
-	if m["sign_type"] != "RSA" {
+	if m["sign_type"] != "RSA2" {
 		result = "error"
 		panic("签名类型未知")
 	}
