@@ -4,12 +4,14 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/milkbobo/gopay/common"
+	"hash"
 	"net/url"
 	"sort"
 	"strings"
@@ -21,6 +23,8 @@ type AliPayClient struct {
 
 	PrivateKey *rsa.PrivateKey
 	PublicKey  *rsa.PublicKey
+
+	RSAType string // RSA or RSA2
 }
 
 func (this *AliPayClient) PayToClient(charge *common.Charge) (map[string]string, error) {
@@ -33,7 +37,7 @@ func (this *AliPayClient) PayToClient(charge *common.Charge) (map[string]string,
 	m["charset"] = "utf-8"
 	m["timestamp"] = time.Now().Format("2006-01-02 15:04:05")
 	m["version"] = "1.0"
-	m["sign_type"] = "RSA2"
+	m["sign_type"] = this.RSAType
 
 	bizContent["out_biz_no"] = charge.TradeNum
 	bizContent["amount"] = AliyunMoneyFeeToString(charge.MoneyFee)
@@ -82,7 +86,8 @@ func (this *AliPayClient) GenSign(m map[string]string) string {
 	sort.Strings(data)
 	signData := strings.Join(data, "&")
 
-	s := sha256.New()
+	s := this.getHash(this.RSAType)
+
 	_, err := s.Write([]byte(signData))
 	if err != nil {
 		panic(err)
@@ -102,13 +107,13 @@ func (this *AliPayClient) CheckSign(signData, sign string) {
 	if err != nil {
 		panic(err)
 	}
-	s := sha256.New()
+	s := this.getHash(this.RSAType)
 	_, err = s.Write([]byte(signData))
 	if err != nil {
 		panic(err)
 	}
-	hash := s.Sum(nil)
-	err = rsa.VerifyPKCS1v15(this.PublicKey, crypto.SHA256, hash, signByte)
+	hashByte := s.Sum(nil)
+	err = rsa.VerifyPKCS1v15(this.PublicKey, this.getCrypto(), hashByte, signByte)
 	if err != nil {
 		panic(err)
 	}
@@ -121,4 +126,27 @@ func (this *AliPayClient) ToURL(m map[string]string) string {
 		buf = append(buf, fmt.Sprintf("%s=%s", k, url.QueryEscape(v)))
 	}
 	return strings.Join(buf, "&")
+}
+
+func (this *AliPayClient) getRsa() string {
+	if this.RSAType == "" {
+		this.RSAType = "RSA"
+	}
+
+	return this.RSAType
+}
+
+func (this *AliPayClient) getCrypto() crypto.Hash {
+	if this.RSAType == "RSA2" {
+		return crypto.SHA256
+	}
+	return crypto.SHA1
+
+}
+
+func (this *AliPayClient) getHash(rasType string) hash.Hash {
+	if rasType == "RSA2" {
+		return sha256.New()
+	}
+	return sha1.New()
 }

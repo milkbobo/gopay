@@ -37,7 +37,7 @@ func (this *AliAppClient) Pay(charge *common.Charge) (map[string]string, error) 
 	m["timestamp"] = time.Now().Format("2006-01-02 15:04:05")
 	m["version"] = "1.0"
 	m["notify_url"] = charge.CallbackURL
-	m["sign_type"] = "RSA2"
+	m["sign_type"] = this.AliPayClient.RSAType
 	bizContent["subject"] = TruncatedText(charge.Describe, 32)
 	bizContent["out_trade_no"] = charge.TradeNum
 	bizContent["product_code"] = "QUICK_MSECURITY_PAY"
@@ -71,7 +71,7 @@ func (this *AliAppClient) QueryOrder(outTradeNo string) (common.AliWebAppQueryRe
 	m["charset"] = "utf-8"
 	m["timestamp"] = time.Now().Format("2006-01-02 15:04:05")
 	m["version"] = "1.0"
-	m["sign_type"] = "RSA2"
+	m["sign_type"] = this.AliPayClient.RSAType
 	bizContent := map[string]string{"out_trade_no": outTradeNo}
 	bizContentJson, err := json.Marshal(bizContent)
 	if err != nil {
