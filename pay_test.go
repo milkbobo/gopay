@@ -5,11 +5,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/milkbobo/gopay/client"
-	"github.com/milkbobo/gopay/common"
-	"github.com/milkbobo/gopay/constant"
 	"net/http"
 	"testing"
+
+	"gopay/client"
+	"gopay/common"
+	"gopay/constant"
 )
 
 func TestPay(t *testing.T) {
@@ -66,7 +67,6 @@ xxxxxxxx
 		AppID:      "xxxxxxxxxxxx",
 		PrivateKey: privateKey.(*rsa.PrivateKey),
 		PublicKey:  publicKey.(*rsa.PublicKey),
-		PayURL:     "https://mapi.alipay.com/gateway.do",
 	})
 }
 

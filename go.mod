@@ -1,5 +1,7 @@
-module github.com/milkbobo/gopay
+module gopay
 
 go 1.15
 
-require github.com/shopspring/decimal v1.2.0
+require (
+	github.com/shopspring/decimal v1.4.0
+)

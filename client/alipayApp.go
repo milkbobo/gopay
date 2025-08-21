@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/milkbobo/gopay/common"
+	"gopay/common"
 	"time"
 )
 
@@ -12,7 +12,7 @@ var defaultAliAppClient *AliAppClient
 
 type AliAppClient struct {
 	*AliPayClient
-	SellerID   string //合作者ID
+	SellerID string //合作者ID
 	//AppID      string // 应用ID
 	//PrivateKey *rsa.PrivateKey
 	//PublicKey  *rsa.PublicKey

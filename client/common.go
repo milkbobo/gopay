@@ -7,10 +7,11 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/milkbobo/gopay/common"
-	"github.com/milkbobo/gopay/util"
+	"gopay/common"
+	"gopay/util"
 	"sort"
 	"strings"
+
 	"github.com/shopspring/decimal"
 )
 
@@ -123,7 +124,7 @@ func TruncatedText(data string, length int) string {
 	return data
 }
 
-//过滤特殊符号
+// 过滤特殊符号
 func FilterTheSpecialSymbol(data string) string {
 	// 定义转换规则
 	specialSymbol := func(r rune) rune {
@@ -144,7 +145,7 @@ func FilterTheSpecialSymbol(data string) string {
 	return strings.Replace(data, "\n", " ", -1)
 }
 
-//对微信下订单或者查订单
+// 对微信下订单或者查订单
 func PostWechat(url string, data map[string]string, h *HTTPSClient) (common.WeChatQueryResult, error) {
 	var xmlRe common.WeChatQueryResult
 	buf := bytes.NewBufferString("")
@@ -183,7 +184,7 @@ func PostWechat(url string, data map[string]string, h *HTTPSClient) (common.WeCh
 	return xmlRe, nil
 }
 
-//对支付宝者查订单
+// 对支付宝者查订单
 func GetAlipay(url string) (common.AliWebQueryResult, error) {
 	var xmlRe common.AliWebQueryResult
 
@@ -198,7 +199,7 @@ func GetAlipay(url string) (common.AliWebQueryResult, error) {
 	return xmlRe, nil
 }
 
-//对支付宝者查订单
+// 对支付宝者查订单
 func GetAlipayApp(urls string) (common.AliWebAppQueryResult, error) {
 	var aliPay common.AliWebAppQueryResult
 
