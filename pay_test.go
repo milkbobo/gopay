@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"testing"
 
-	"gopay/client"
-	"gopay/common"
-	"gopay/constant"
+	"github.com/milkbobo/gopay/client"
+	"github.com/milkbobo/gopay/common"
+	"github.com/milkbobo/gopay/constant"
 
 	"github.com/shopspring/decimal"
 )

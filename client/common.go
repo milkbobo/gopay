@@ -7,8 +7,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"gopay/common"
-	"gopay/util"
+	"github.com/milkbobo/gopay/common"
+	"github.com/milkbobo/gopay/util"
 	"sort"
 	"strings"
 
