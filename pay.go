@@ -5,6 +5,8 @@ import (
 	"gopay/client"
 	"gopay/common"
 	"gopay/constant"
+
+	"github.com/shopspring/decimal"
 )
 
 // 用户下单支付接口
@@ -35,7 +37,7 @@ func checkCharge(charge *common.Charge) error {
 	if charge.PayMethod <= 0 {
 		return errors.New("PayMethod不能少于等于0")
 	}
-	if charge.MoneyFee <= 0 {
+	if charge.MoneyFee.LessThanOrEqual(decimal.Zero) {
 		return errors.New("MoneyFee不能少于等于0")
 	}
 	return nil
