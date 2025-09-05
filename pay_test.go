@@ -11,6 +11,8 @@ import (
 	"gopay/client"
 	"gopay/common"
 	"gopay/constant"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestPay(t *testing.T) {
@@ -18,7 +20,7 @@ func TestPay(t *testing.T) {
 	initHandle()
 	charge := new(common.Charge)
 	charge.PayMethod = constant.ALI_WEB
-	charge.MoneyFee = 1
+	charge.MoneyFee = decimal.NewFromFloat(1.00)
 	charge.Describe = "test pay"
 	charge.TradeNum = "11111111122"
 	charge.CallbackURL = "http://127.0.0.1/callback/aliappcallback"
